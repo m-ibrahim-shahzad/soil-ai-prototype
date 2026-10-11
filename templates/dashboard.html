@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Soil Restoration Platform - IYEC Prototype</title>
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; padding: 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #334155; padding-bottom: 16px; }
+        .header h1 { font-size: 22px; color: #38bdf8; }
+        .header p { font-size: 13px; color: #94a3b8; }
+        
+        /* Grid Layout */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 18px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
+        .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 700; }
+        .card-value { font-size: 24px; font-weight: 700; color: #f1f5f9; margin-top: 8px; }
+        
+        /* Secondary Section Layout */
+        .panels { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        @media(max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+        
+        .panel { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px; }
+        .panel h3 { font-size: 16px; margin-bottom: 14px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+        
+        /* Map container */
+        #map { height: 300px; border-radius: 8px; margin-top: 10px; }
+        
+        /* Badge directives */
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; background: #0284c7; color: white; }
+        .directive-box { background: #0f172a; border-left: 4px solid #38bdf8; padding: 12px; margin-top: 10px; border-radius: 0 6px 6px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>🌱 AI-Powered Autonomous Soil Restoration Analytics</h1>
+            <p>IYEC Competition Prototype • Active Cluster: <strong>{{ data.cluster }}</strong></p>
+        </div>
+        <div>
+            <span class="badge">System Status: {{ data.status }}</span>
+        </div>
+    </div>
+
+    <!-- Top KPI Cards -->
+    <div class="grid">
+        <div class="card" style="border-color: #22c55e;">
+            <div class="card-title">Soil Health Index (SBHI)</div>
+            <div class="card-value" style="color: #22c55e;">{{ data.sbhi }}%</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Moisture Level</div>
+            <div class="card-value">{{ data.moisture }}%</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Soil pH</div>
+            <div class="card-value">{{ data.ph }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Soil Compaction</div>
+            <div class="card-value">{{ data.compaction }} MPa</div>
+        </div>
+        <div class="card">
+            <div class="card-title">NPK Balance</div>
+            <div class="card-value" style="font-size: 18px;">{{ data.nitrogen }}-{{ data.phosphorus }}-{{ data.potassium }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Electrical Conductivity</div>
+            <div class="card-value">{{ data.ec }} dS/m</div>
+        </div>
+    </div>
+
+    <!-- Lower Interactive Panels (Map, Graphs, AI Directive) -->
+    <div class="panels">
+        <!-- Left Panel: Graphs & Telemetry Trends -->
+        <div class="panel">
+            <h3>📈 Parameter Trends Over Time</h3>
+            <canvas id="soilChart" width="100%" height="45"></canvas>
+            
+            <h3 style="margin-top: 24px;">🤖 Autonomous AI Intervention Directive</h3>
+            <div class="directive-box">
+                <strong>Recommended Action:</strong> {{ data.action }}<br>
+                <small style="color: #94a3b8;">Triggered based on real-time multi-sensor regression analysis and rule matrix criteria.</small>
+            </div>
+        </div>
+
+        <!-- Right Panel: Geospatial Rover Mapping -->
+        <div class="panel">
+            <h3>🗺️ Rover Telemetry Mapping</h3>
+            <p style="font-size: 12px; color: #94a3b8;">Live GPS positioning of scanning nodes across test plots.</p>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Scripts for Chart.js and Leaflet Maps -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize Chart.js Graph
+        const ctx = document.getElementById('soilChart').getContext('2d');
+        const soilChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM"],
+                datasets: [{
+                    label: 'SBHI Score (%)',
+                    data: [62.0, 67.5, 71.0, 74.2, 78.5],
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }, {
+                    label: 'Moisture (%)',
+                    data: [15.0, 18.2, 20.5, 22.0, 24.5],
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#f8fafc' } } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                }
+            }
+        });
+
+        // Initialize Leaflet Map centered on Lahore / Test Zone
+        const map = L.map('map').setView([{{ data.lat }}, {{ data.lng }}], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add marker for current rover scan location
+        const marker = L.marker([{{ data.lat }}, {{ data.lng }}]).addTo(map);
+        marker.bindPopup("<b>{{ data.plot_id }}</b><br>SBHI: {{ data.sbhi }}%<br>Action: {{ data.action }}").openPopup();
+    </script>
+</body>
+</html>
